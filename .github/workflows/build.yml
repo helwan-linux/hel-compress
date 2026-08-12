@@ -30,3 +30,9 @@ jobs:
           
           # نسخ ملف PKGBUILD إلى مجلد المنزل الخاص بالمستخدم المستقل وتشغيل makepkg هناك
           su - builder -c "cp $GITHUB_WORKSPACE/PKGBUILD /home/builder/ && cd /home/builder && makepkg -s --noconfirm"
+
+      - name: Upload Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hel-compress-package
+          path: /home/builder/hel-compress/*.pkg.tar.zst
