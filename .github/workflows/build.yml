@@ -29,4 +29,4 @@ jobs:
           chmod 777 .
           
           # نسخ ملف PKGBUILD إلى مجلد المنزل الخاص بالمستخدم المستقل وتشغيل makepkg هناك
-          su - builder -c "cp $GITHUB_WORKSPACE/PKGBUILD /home/builder/ && cd /home/builder && makepkg -si --noconfirm"
+          su - builder -c "cp $GITHUB_WORKSPACE/PKGBUILD /home/builder/ && cd /home/builder && makepkg -s --noconfirm"
