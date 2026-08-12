@@ -22,16 +22,16 @@ jobs:
           pacman -Syu --noconfirm
           pacman -S --noconfirm git gcc make pkgconf gtk3 zlib bzip2 zstd openssl
 
-      - name: Build Project Locally (Make)
+      - name: Build Project Inside Folder
         run: |
           cd hel-compress
           make
 
-      - name: Build Arch Linux Package (PKGBUILD)
+      - name: Build Arch Linux Package from Root
         run: |
-          # إنشاء مستخدم عادي لأن makepkg لا يفضل العمل بصلاحيات root مباشرة
           useradd -m builder
           chown -R builder:builder .
           chmod 777 .
           
-          su - builder -c "cd $GITHUB_WORKSPACE/hel-compress && makepkg -si --noconfirm"
+          # الانتقال لجذر المشروع حيث يوجد PKGBUILD وتشغيل makepkg هناك
+          su - builder -c "cd $GITHUB_WORKSPACE && makepkg -si --noconfirm"
