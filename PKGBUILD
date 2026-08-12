@@ -8,26 +8,26 @@ url="https://github.com/helwan-linux/hel-compress"
 license=('MIT')
 depends=('zlib' 'bzip2' 'zstd' 'openssl' 'gtk3')
 makedepends=('gcc' 'make' 'pkgconfig')
-source=("$pkgname-$pkgver.tar.gz")
+source=("git+https://github.com/helwan-linux/hel-compress.git")
 sha256sums=('SKIP')
 
 build() {
-    cd "$pkgname-$pkgver"
+    cd "hel-compress"
     make
 }
 
 package() {
-    cd "$pkgname-$pkgver"
+    cd "hel-compress"
     
     # تثبيت الملف التنفيذي
     install -Dm755 hel-compress "$pkgdir/usr/bin/hel-compress"
     
-    # تثبيت ملف سطح المكتب (Desktop Entry) إذا وجد
+    # تثبيت ملف سطح المكتب (Desktop Entry)
     if [ -f "hel-compress.desktop" ]; then
         install -Dm644 hel-compress.desktop "$pkgdir/usr/share/applications/hel-compress.desktop"
     fi
     
-    # تثبيت الأيقونة إذا وجدت
+    # تثبيت الأيقونة
     if [ -f "icons/hel-compress.png" ]; then
         install -Dm644 icons/hel-compress.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/hel-compress.png"
     fi
