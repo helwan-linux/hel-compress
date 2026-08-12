@@ -12,20 +12,15 @@ source=("git+https://github.com/helwan-linux/hel-compress.git")
 sha256sums=('SKIP')
 
 build() {
-    cd "$pkgname"
+    cd "$pkgname/$pkgname"
     make
 }
 
 package() {
-    cd "$pkgname"
+    cd "$pkgname/$pkgname"
     
-    # تثبيت الملف التنفيذي للـ CLI
+    # تثبيت الملف التنفيذي
     install -Dm755 hel-compress "$pkgdir/usr/bin/hel-compress"
-    
-    # تثبيت الملف التنفيذي للـ GUI (إذا تم بناؤه كملف منفصل أو أداة مستقلة)
-    if [ -f "hel-gui" ]; then
-        install -Dm755 hel-gui "$pkgdir/usr/bin/hel-gui"
-    fi
     
     # تثبيت ملف سطح المكتب (Desktop Entry)
     if [ -f "hel-compress.desktop" ]; then
