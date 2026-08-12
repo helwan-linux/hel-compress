@@ -33,5 +33,5 @@ jobs:
           chown -R builder:builder .
           chmod 777 .
           
-          # الانتقال لجذر المشروع حيث يوجد PKGBUILD وتشغيل makepkg هناك
+          # تشغيل makepkg من جذر المشروع حيث يوجد PKGBUILD بالخارج تماماً
           su - builder -c "cd $GITHUB_WORKSPACE && makepkg -si --noconfirm"
