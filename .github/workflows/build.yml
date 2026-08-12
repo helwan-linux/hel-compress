@@ -1,0 +1,37 @@
+name: Build and Test hel-compress
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: archlinux:base-devel
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Initialize Pacman and Install Dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git gcc make pkgconf gtk3 zlib bzip2 zstd openssl
+
+      - name: Build Project Locally (Make)
+        run: |
+          cd hel-compress
+          make
+
+      - name: Build Arch Linux Package (PKGBUILD)
+        run: |
+          # إنشاء مستخدم عادي لأن makepkg لا يفضل العمل بصلاحيات root مباشرة
+          useradd -m builder
+          chown -R builder:builder .
+          chmod 777 .
+          
+          su - builder -c "cd $GITHUB_WORKSPACE/hel-compress && makepkg -si --noconfirm"
