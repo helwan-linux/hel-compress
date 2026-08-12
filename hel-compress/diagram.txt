@@ -1,0 +1,20 @@
+hel-compress/
+📁 hel-compress/
+├── 📁 Makefile
+│   └── 📄 Makefile
+├── 📄 README.md
+├── 📄 hel-compress.desktop
+├── 📁 icons
+│   └── 📄 hel-compress.png
+├── 📁 include
+│   ├── 📄 compressor.h
+│   ├── 📄 lang_manager.h
+│   └── 📄 utils.h
+├── 📁 scripts
+│   └── 📄 helwan-compress.sh
+└── 📁 src
+    ├── 📄 compressor.c
+    ├── 📄 gui.c
+    ├── 📄 lang_manager.c
+    ├── 📄 main.c
+    └── 📄 utils.c
