@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -O2 -Iinclude `pkg-config --cflags gtk+-3.0`
-LDFLAGS = -lz -lbz2 -lzstd -lssl -lcrypto
+LDFLAGS = -lz -lbz2 -lzstd -lssl -lcrypto -larchive
 GTK_LIBS = `pkg-config --libs gtk+-3.0`
 
 # CLI Objects (بدون gui.o)
