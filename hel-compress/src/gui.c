@@ -11,6 +11,9 @@ static CompressionAlgo get_selected_algo() {
     if (g_strcmp0(algo, "gzip") == 0) return ALGO_GZIP;
     if (g_strcmp0(algo, "bzip2") == 0) return ALGO_BZIP2;
     if (g_strcmp0(algo, "zstd") == 0) return ALGO_ZSTD;
+    if (g_strcmp0(algo, "tar") == 0) return ALGO_TAR;
+    if (g_strcmp0(algo, "xz") == 0) return ALGO_XZ;
+    if (g_strcmp0(algo, "7z") == 0) return ALGO_7Z;
     return ALGO_ZLIB;
 }
 
@@ -63,7 +66,7 @@ int main(int argc, char *argv[]) {
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Helwan Compress");
-    gtk_window_set_default_size(GTK_WINDOW(window), 600, 250);
+    gtk_window_set_default_size(GTK_WINDOW(window), 600, 280);
 
     grid = gtk_grid_new();
     gtk_container_add(GTK_CONTAINER(window), grid);
@@ -76,6 +79,9 @@ int main(int argc, char *argv[]) {
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_algo), "gzip");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_algo), "bzip2");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_algo), "zstd");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_algo), "tar");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_algo), "xz");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_algo), "7z");
     gtk_combo_box_set_active(GTK_COMBO_BOX(combo_algo), 0);
     gtk_grid_attach(GTK_GRID(grid), combo_algo, 0, 1, 2, 1);
 

@@ -22,6 +22,9 @@ int main(int argc, char *argv[]) {
         if (!strcmp(argv[i], "--algo=gzip")) algo = ALGO_GZIP;
         else if (!strcmp(argv[i], "--algo=bzip2")) algo = ALGO_BZIP2;
         else if (!strcmp(argv[i], "--algo=zstd")) algo = ALGO_ZSTD;
+        else if (!strcmp(argv[i], "--algo=tar")) algo = ALGO_TAR;
+        else if (!strcmp(argv[i], "--algo=xz")) algo = ALGO_XZ;
+        else if (!strcmp(argv[i], "--algo=7z")) algo = ALGO_7Z;
         else if (!strcmp(argv[i], "--encrypt")) encrypt = 1;
         else if (!strcmp(argv[i], "--decrypt")) decrypt = 1;
     }

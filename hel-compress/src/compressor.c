@@ -5,6 +5,8 @@
 #include <zlib.h>
 #include <zstd.h>
 #include <bzlib.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <dirent.h>
@@ -60,6 +62,54 @@ int decrypt_buffer(unsigned char *in, int in_len, unsigned char *out, const unsi
 }
 
 int compress_file(const char *input_path, const char *output_path, CompressionAlgo algo, int encrypt) {
+    // دعم صيغ libarchive المتقدمة (tar, xz, 7z)
+    if (algo == ALGO_TAR || algo == ALGO_XZ || algo == ALGO_7Z) {
+        struct archive *a;
+        struct archive_entry *entry;
+        struct stat st;
+        FILE *f;
+
+        if (stat(input_path, &st) != 0) return -1;
+
+        a = archive_write_new();
+        if (algo == ALGO_TAR) {
+            archive_write_set_format_pax_restricted(a);
+        } else if (algo == ALGO_XZ) {
+            archive_write_add_filter_xz(a);
+            archive_write_set_format_pax_restricted(a);
+        } else if (algo == ALGO_7Z) {
+            archive_write_set_format_7zip(a);
+        }
+
+        if (archive_write_open_filename(a, output_path) != ARCHIVE_OK) {
+            archive_write_free(a);
+            return -1;
+        }
+
+        entry = archive_entry_new();
+        archive_entry_set_pathname(entry, input_path);
+        archive_entry_set_size(entry, st.st_size);
+        archive_entry_set_filetype(entry, AE_IFREG);
+        archive_entry_set_perm(entry, 0644);
+        archive_write_header(a, entry);
+
+        f = fopen(input_path, "rb");
+        if (f) {
+            char buff[CHUNK];
+            size_t len;
+            while ((len = fread(buff, 1, sizeof(buff), f)) > 0) {
+                archive_write_data(a, buff, len);
+            }
+            fclose(f);
+        }
+
+        archive_entry_free(entry);
+        archive_write_close(a);
+        archive_write_free(a);
+        return 0;
+    }
+
+    // الكود الأصلي للخوارزميات التقليدية (Zlib, Gzip, Bzip2, Zstd)
     FILE *source = fopen(input_path, "rb");
     FILE *dest = fopen(output_path, "wb");
     if (!source || !dest) {
@@ -134,6 +184,7 @@ int compress_file(const char *input_path, const char *output_path, CompressionAl
 }
 
 int decompress_file(const char *input_path, const char *output_path, CompressionAlgo algo, int decrypt) {
+    // الكود الأصلي لفك الملفات الفردية
     FILE *source = fopen(input_path, "rb");
     FILE *dest = fopen(output_path, "wb");
     if (!source || !dest) {
@@ -297,75 +348,131 @@ int compress_directory(const char *dir_path, const char *archive_path, Compressi
 }
 
 int extract_archive(const char *archive_path, const char *output_dir, CompressionAlgo algo, int decrypt) {
-    FILE *archive = fopen(archive_path, "rb");
-    if (!archive) return -1;
+    // دعم الاستخراج الشامل عبر libarchive (لصيغ tar, xz, 7z وغيرها)
+    struct archive *a;
+    struct archive *ext;
+    struct archive_entry *entry;
+    int r;
 
-    fseek(archive, -sizeof(long), SEEK_END);
-    long index_start;
-    fread(&index_start, sizeof(long), 1, archive);
+    a = archive_read_new();
+    archive_read_support_format_all(a);
+    archive_read_support_filter_all(a);
 
-    fseek(archive, index_start, SEEK_SET);
-    int index_count;
-    fread(&index_count, sizeof(int), 1, archive);
+    ext = archive_write_disk_new();
+    archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_TIME);
+    archive_write_disk_set_standard_lookup(ext);
 
-    CentralDirectoryEntry *index = malloc(index_count * sizeof(CentralDirectoryEntry));
-    fread(index, sizeof(CentralDirectoryEntry), index_count, archive);
+    if ((r = archive_read_open_filename(a, archive_path, 10240)) != ARCHIVE_OK) {
+        archive_read_free(a);
+        archive_write_free(ext);
+        
+        // الرجوع لدعم الأرشيف اليدوي القديم إذا لم يكن ملف libarchive
+        FILE *archive = fopen(archive_path, "rb");
+        if (!archive) return -1;
 
-    for (int i = 0; i < index_count; i++) {
-        fseek(archive, index[i].offset, SEEK_SET);
+        fseek(archive, -sizeof(long), SEEK_END);
+        long index_start;
+        fread(&index_start, sizeof(long), 1, archive);
 
-        char *filename = malloc(index[i].name_len + 1);
-        fread(filename, 1, index[i].name_len, archive);
-        filename[index[i].name_len] = '\0';
+        fseek(archive, index_start, SEEK_SET);
+        int index_count;
+        fread(&index_count, sizeof(int), 1, archive);
 
-        unsigned char *comp_buf = malloc(index[i].compressed_size);
-        fread(comp_buf, 1, index[i].compressed_size, archive);
+        CentralDirectoryEntry *index = malloc(index_count * sizeof(CentralDirectoryEntry));
+        fread(index, sizeof(CentralDirectoryEntry), index_count, archive);
 
-        char out_filepath[2048];
-        snprintf(out_filepath, sizeof(out_filepath), "%s/%s", output_dir, filename);
+        for (int i = 0; i < index_count; i++) {
+            fseek(archive, index[i].offset, SEEK_SET);
 
-        char tmp_path[2048];
-        snprintf(tmp_path, sizeof(tmp_path), "%s", out_filepath);
-        for (char *p = tmp_path + 1; *p; p++) {
-            if (*p == '/') {
-                *p = '\0';
-                mkdir(tmp_path, 0777);
-                *p = '/';
+            char *filename = malloc(index[i].name_len + 1);
+            fread(filename, 1, index[i].name_len, archive);
+            filename[index[i].name_len] = '\0';
+
+            unsigned char *comp_buf = malloc(index[i].compressed_size);
+            fread(comp_buf, 1, index[i].compressed_size, archive);
+
+            char out_filepath[2048];
+            snprintf(out_filepath, sizeof(out_filepath), "%s/%s", output_dir, filename);
+
+            char tmp_path[2048];
+            snprintf(tmp_path, sizeof(tmp_path), "%s", out_filepath);
+            for (char *p = tmp_path + 1; *p; p++) {
+                if (*p == '/') {
+                    *p = '\0';
+                    mkdir(tmp_path, 0777);
+                    *p = '/';
+                }
             }
+
+            unsigned char *decomp_buf = malloc(index[i].original_size);
+            if (index[i].algo_type == 1) {
+                ZSTD_decompress(decomp_buf, index[i].original_size, comp_buf, index[i].compressed_size);
+            } else if (index[i].algo_type == 2) {
+                unsigned int d_len = index[i].original_size;
+                BZ2_bzBuffToBuffDecompress((char*)decomp_buf, &d_len, (char*)comp_buf, index[i].compressed_size, 0, 0);
+            } else {
+                z_stream strm;
+                strm.zalloc = Z_NULL;
+                strm.zfree = Z_NULL;
+                strm.opaque = Z_NULL;
+                strm.avail_in = index[i].compressed_size;
+                strm.next_in = comp_buf;
+                strm.avail_out = index[i].original_size;
+                strm.next_out = decomp_buf;
+                inflateInit(&strm);
+                inflate(&strm, Z_FINISH);
+                inflateEnd(&strm);
+            }
+
+            FILE *f_out = fopen(out_filepath, "wb");
+            if (f_out) {
+                fwrite(decomp_buf, 1, index[i].original_size, f_out);
+                fclose(f_out);
+            }
+
+            free(filename);
+            free(comp_buf);
+            free(decomp_buf);
         }
 
-        unsigned char *decomp_buf = malloc(index[i].original_size);
-        if (index[i].algo_type == 1) {
-            ZSTD_decompress(decomp_buf, index[i].original_size, comp_buf, index[i].compressed_size);
-        } else if (index[i].algo_type == 2) {
-            unsigned int d_len = index[i].original_size;
-            BZ2_bzBuffToBuffDecompress((char*)decomp_buf, &d_len, (char*)comp_buf, index[i].compressed_size, 0, 0);
-        } else {
-            z_stream strm;
-            strm.zalloc = Z_NULL;
-            strm.zfree = Z_NULL;
-            strm.opaque = Z_NULL;
-            strm.avail_in = index[i].compressed_size;
-            strm.next_in = comp_buf;
-            strm.avail_out = index[i].original_size;
-            strm.next_out = decomp_buf;
-            inflateInit(&strm);
-            inflate(&strm, Z_FINISH);
-            inflateEnd(&strm);
-        }
-
-        FILE *f_out = fopen(out_filepath, "wb");
-        if (f_out) {
-            fwrite(decomp_buf, 1, index[i].original_size, f_out);
-            fclose(f_out);
-        }
-
-        free(filename);
-        free(comp_buf);
-        free(decomp_buf);
+        free(index);
+        fclose(archive);
+        return 0;
     }
 
-    free(index);
-    fclose(archive);
+    // حلقة الاستخراج عبر libarchive
+    for (;;) {
+        r = archive_read_next_header(a, &entry);
+        if (r == ARCHIVE_EOF) break;
+        if (r < ARCHIVE_OK) break;
+
+        const char *current_file = archive_entry_pathname(entry);
+        char full_out_path[2048];
+        snprintf(full_out_path, sizeof(full_out_path), "%s/%s", output_dir, current_file);
+        archive_entry_set_pathname(entry, full_out_path);
+
+        r = archive_write_header(ext, entry);
+        if (r < ARCHIVE_OK) {
+            // تجاهل خطأ الرأس إذا وجد
+        } else if (archive_entry_size(entry) > 0) {
+            const void *buff;
+            size_t size;
+            la_int64_t offset;
+
+            for (;;) {
+                r = archive_read_data_block(a, &buff, &size, &offset);
+                if (r == ARCHIVE_EOF) break;
+                if (r < ARCHIVE_OK) break;
+                archive_write_data_block(ext, buff, size, offset);
+            }
+        }
+        r = archive_write_finish_entry(ext);
+        if (r < ARCHIVE_OK) break;
+    }
+
+    archive_read_close(a);
+    archive_read_free(a);
+    archive_write_close(ext);
+    archive_write_free(ext);
     return 0;
 }
