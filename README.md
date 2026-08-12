@@ -1,6 +1,5 @@
 # Helwan Compress (hel-compress)
 
-# Helwan Compress (hel-compress)
 
 An advanced compression and archiving tool supporting multiple compression algorithms, secure encryption, a flexible command-line interface, and an easy-to-use graphical interface.
 
