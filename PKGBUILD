@@ -19,13 +19,14 @@ build() {
 package() {
     cd "$pkgname/$pkgname"
     
-    # تثبيت الملف التنفيذي
+    # تثبيت ملف سطر الأوامر
     install -Dm755 hel-compress "$pkgdir/usr/bin/hel-compress"
     
-    # تثبيت ملف سطح المكتب (Desktop Entry)
-    if [ -f "hel-compress.desktop" ]; then
-        install -Dm644 hel-compress.desktop "$pkgdir/usr/share/applications/hel-compress.desktop"
-    fi
+    # تثبيت الواجهة الرسومية وتوحيد الاسم
+    install -Dm755 hel-gui "$pkgdir/usr/bin/hel-gui"
+    
+    # تثبيت ملف سطح المكتب
+    install -Dm644 hel-compress.desktop "$pkgdir/usr/share/applications/hel-compress.desktop"
     
     # تثبيت الأيقونة
     if [ -f "icons/hel-compress.png" ]; then
