@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Helwan Compress
 Comment=أداة ضغط وفك ضغط متعددة الخوارزميات مع تشفير AES-256
-Exec=hel-compress-gui
+Exec=hel-gui
 Icon=hel-compress
 Terminal=false
 Type=Application
